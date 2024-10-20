@@ -281,7 +281,7 @@
                     android:layout_marginStart="85dp"
                     android:layout_marginTop="16dp"
                     android:layout_marginEnd="32dp"
-                    android:text="Time tacken"
+                    android:text="Time"
                     android:textColor="@color/white"
                     android:textSize="18sp"
                     app:layout_constraintEnd_toEndOf="parent"

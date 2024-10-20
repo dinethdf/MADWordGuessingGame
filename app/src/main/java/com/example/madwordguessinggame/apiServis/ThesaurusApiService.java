@@ -17,7 +17,7 @@ import java.io.IOException;
 public class ThesaurusApiService {
 
     // Your API key here
-    private static final String API_KEY = "YOUR_API_KEY";
+    private static final String API_KEY = "HR5B4IJcG7CElE183HzbbA==z3LzrhPAvGsItEUM";
 
     public interface ApiCallback {
         void onSuccess(String synonym);
