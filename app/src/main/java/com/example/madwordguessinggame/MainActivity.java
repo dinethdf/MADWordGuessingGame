@@ -8,8 +8,10 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import androidx.core.graphics.Insets;
@@ -18,11 +20,16 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.madwordguessinggame.apiServis.RandomWordApi;
 import com.example.madwordguessinggame.apiServis.RandomWord;
+import com.example.madwordguessinggame.apiServis.RhymeApiService;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import java.util.Random;
 
 
 public class MainActivity extends AppCompatActivity {
 
-    private int userPoints;
     private int userAttemps;
     private String userGetTime;
 
@@ -35,12 +42,18 @@ public class MainActivity extends AppCompatActivity {
 
     private EditText editTextUserInput;
     private Button buttonSubmit;
-    private TextView textViewDisplay;
-    private TextView messageText;
     private ImageView imageView;
-    private LinearLayout linearLayoutTryAgain;
 
     public String randomWord;
+    public String RhythmWord;
+    private RhymeApiService rhymeApiService;
+
+    public int userPoint;
+    public int noOfAttempt;
+    private TextView userPoints;
+    private TextView noAttemps;
+    private TextView messageMain;
+    private TextView wordLetters;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,52 +76,133 @@ public class MainActivity extends AppCompatActivity {
 
 
         button.setOnClickListener(new View.OnClickListener() {
+
+
+
+            private LinearLayout linearLayoutTryAgain;
+            private LinearLayout linearLayoutGetNoLetter;
+            private LinearLayout linearLayoutPicLetter;
+            private TextView textViewDisplay;
+            private TextView messageText;
+
+
+
+            private ImageView imageMsg;
+
             @Override
             public void onClick(View v) {
 
             setContentView(R.layout.active_game_screen);
+
+            linearLayoutTryAgain = findViewById(R.id.linearLayoutTryAgain);
+            linearLayoutGetNoLetter = findViewById(R.id.linearLayoutGetNoLetter);
+            linearLayoutPicLetter = findViewById(R.id.linearLayoutPicLetter);
+
+            textViewProfile = findViewById(R.id.textView202);
+            editTextUserInput = findViewById(R.id.textUserInput);
+            buttonSubmit = findViewById(R.id.buttonChecked);
+            imageView = findViewById(R.id.imageView10);
+            imageView = findViewById(R.id.imageViewMainMsg);
+            messageMain = findViewById(R.id.messageMain);
+            wordLetters = findViewById(R.id.textView10);
+
+            wordLetters.setText("Click Options for that");
             getApiDataAndUpdate();
+            rhymeApiService = new RhymeApiService();
 
 
-              linearLayoutTryAgain = findViewById(R.id.linearLayoutTryAgain);
-              textViewProfile = findViewById(R.id.textView10);
-              editTextUserInput = findViewById(R.id.textUserInput);
-              buttonSubmit = findViewById(R.id.buttonChecked);
-              imageView = findViewById(R.id.imageView10);
+            messageMain.setText("Enter Correct Word");
+            imageView.setImageResource(R.drawable.btn_4);
+            imageView.setVisibility(View.VISIBLE);
 
 
-                linearLayoutTryAgain.setOnClickListener(new View.OnClickListener() {
+
+            userPoints = findViewById(R.id.textView4);
+            noAttemps = findViewById(R.id.textView9);
+
+            userPoint = 100;
+            noOfAttempt = 0;
+            userPoints.setText(userPoint+" Points");
+            noAttemps.setText((10-noOfAttempt) + "");
+
+            linearLayoutTryAgain.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        resetFunction();
+
+                        new AlertDialog.Builder(MainActivity.this)
+                                .setTitle("Are you Sure")
+                                .setMessage("You Point is over Plz Try again")
+                                .setPositiveButton("OK", (dialog, which) -> {
+                                    resetFunction();
+                                })
+                                .setNegativeButton("Cancel", (dialog, which) -> {
+                                })
+                                .show();
+                    }
+            });
+
+                linearLayoutGetNoLetter.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    randWordLetterSet();
+
+                }
+                });
+                linearLayoutPicLetter.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        randWordPickLetterSet();
                     }
                 });
 
-//                messageText = findViewById(R.id.textView);
-//                messageText.setText("");
 
                 buttonSubmit.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         imageView = findViewById(R.id.imageView10);
                         
-                        // Get the text from EditText and set it to the TextView
-                        String userInput = editTextUserInput.getText().toString();
-                        if (!userInput.isEmpty() && randomWord.equals(userInput)) {
-                            System.out.println("The strings are equal.");
+                        if(noOfAttempt < 9 && userPoint > 10){
+                            noOfAttempt++;
+                            userPoint = userPoint - 10;
+                            userPoints.setText( userPoint + " Points");
+                            noAttemps.setText((10 - noOfAttempt)+"");
 
-//                          messageText.setText("You word Is correnct");
-                            imageView.setVisibility(View.VISIBLE);
-                            editTextUserInput.setEnabled(false);
+                            System.out.println(noOfAttempt);
+                            String userInput = editTextUserInput.getText().toString();
 
-                        } else {
-                            System.out.println("The strings are not equal.");
-//                          messageText.setText("You word Is not correnct");
+                            if(noOfAttempt == 4){
+                                fetchRhymingWordsApi(randomWord);
+                            }
 
+                            if (randomWord.equals(userInput)) {
+                                System.out.println("The strings are equal.");
+
+                                messageMain.setText("You Enterd Correct Word");
+                                imageView.setVisibility(View.VISIBLE);
+                                editTextUserInput.setEnabled(false);
+
+                            } else {
+                                System.out.println("The strings are not equal.");
+                                messageMain.setText("Wrong Word");
+
+                            }
+                            System.out.println("Word fetched: " + randomWord);
+                            System.out.println("Word User Type: " + userInput);
+                            System.out.println("Rythem word Type: " + RhythmWord);
+
+                        }else {
+                            new AlertDialog.Builder(MainActivity.this)
+                                    .setTitle("Failed to Guess")
+                                    .setMessage("Don't Worry Try again")
+                                    .setPositiveButton("OK", (dialog, which) -> {
+                                    })
+                                    .show();
+                            messageMain.setText("Not coreect you try again");
+                            System.out.println(noOfAttempt + "all atempt get");
+                            noOfAttempt = 0;
+                            userPoint = 100;
+                            resetFunction();
                         }
-                        System.out.println("Word fetched: " + randomWord);
-                        System.out.println("Word User Type: " + userInput);
-
                     }
                 });
 
@@ -149,8 +243,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public interface FetchWordCallback {
-        void onWordFetched(String word);  // Called on success
-        void onError(String errorMessage); // Called on failure
+        void onWordFetched(String word);
+        void onError(String errorMessage);
     }
 
     private void fetchWordAndUpdateUI(FetchWordCallback callback) {
@@ -159,9 +253,7 @@ public class MainActivity extends AppCompatActivity {
             public void onSuccess(RandomWord response) {
                 // Get the word
                 String word = response.getWord().get(0);
-
                 randomWord = word;
-
                 // Pass the word to the callback
                 if (callback != null) {
                     callback.onWordFetched(word);
@@ -170,10 +262,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(String errorMessage) {
-                // Show error in the TextView
-                textViewProfile.setText("Error getting word: " + errorMessage);
 
-                // Pass the error to the callback
                 if (callback != null) {
                     callback.onError(errorMessage);
                 }
@@ -186,9 +275,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onWordFetched(String word) {
                 System.out.println("Word fetched: " + word);
-
-                // Update the UI
-                textViewProfile.setText(word);
+              textViewProfile.setText(word);
             }
 
             @Override
@@ -199,12 +286,83 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public  void resetFunction(){
+        messageMain.setText("Word Changed Try!");
         System.out.println("Word fetched: Reload");
         getApiDataAndUpdate();
         editTextUserInput.setEnabled(true);
         editTextUserInput.setText("");
         imageView.setVisibility(View.INVISIBLE );
+        userPoint = 100;
+        noOfAttempt = 0;
+        userPoints.setText(userPoint+" Points");
+        noAttemps.setText((10-noOfAttempt) + "");
+        wordLetters.setText("Click Options for that");
 
+    }
+
+    public  void randWordLetterSet(){
+        int wordLength = randomWord.length();
+        StringBuilder hiddenWord = new StringBuilder();
+        for (int i = 0; i < wordLength; i++) {
+            hiddenWord.append("X ");
+        }
+
+        wordLetters.setText(hiddenWord.toString());
+        userPoint = userPoint - 5;
+        userPoints.setText(userPoint+" Points");
+    }
+
+    public  void randWordPickLetterSet(){
+
+        int wordLength = randomWord.length();
+        Random random = new Random();
+        char revealLetter = randomWord.charAt(random.nextInt(wordLength));
+
+        StringBuilder hiddenWord = new StringBuilder();
+        for (int i = 0; i < wordLength; i++) {
+            if (randomWord.charAt(i) == revealLetter) {
+                hiddenWord.append(randomWord.charAt(i) );
+                hiddenWord.append(" ");
+            } else {
+                hiddenWord.append("X ");
+            }
+        }
+        wordLetters.setText(hiddenWord.toString());
+        userPoint = userPoint - 5;
+        userPoints.setText(userPoint+" Points");
+    }
+
+    private void fetchRhymingWordsApi(String word) {
+        rhymeApiService.fetchRhymingWords(word, new RhymeApiService.ApiCallback() {
+            @Override
+            public void onSuccess(String responseData) {
+                runOnUiThread(() -> {
+                    try {
+                        // Parse the response to get the first rhyme word
+                        JSONArray jsonArray = new JSONArray(responseData);
+                        if (jsonArray.length() > 0) {
+
+                            RhythmWord = jsonArray.getString(0);
+                            textViewProfile.setText(RhythmWord);
+                            Toast.makeText(MainActivity.this, "Rhyme Word: " + RhythmWord, Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(MainActivity.this, "No rhyme found", Toast.LENGTH_SHORT).show();
+                            textViewProfile.setText("This word has No rhyme");
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        Toast.makeText(MainActivity.this, "Error parsing response", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(String errorMessage) {
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
 }
